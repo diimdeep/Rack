@@ -1,6 +1,8 @@
 #pragma once
 
-// Include most Rack headers for convenience
+
+// The following headers are the "public" API of Rack.
+
 #include <common.hpp>
 #include <math.hpp>
 #include <string.hpp>
@@ -100,19 +102,16 @@
 namespace rack {
 
 
-/** Define this macro before including this header to prevent common namespaces from being included in the main `rack::` namespace. */
-#ifndef RACK_FLATTEN_NAMESPACES
-	// Import some namespaces for convenience
-	using namespace logger;
-	using namespace math;
-	using namespace widget;
-	using namespace ui;
-	using namespace app;
-	using plugin::Plugin;
-	using plugin::Model;
-	using namespace engine;
-	using namespace componentlibrary;
-#endif
+// Import some namespaces for convenience
+using namespace logger;
+using namespace math;
+using namespace widget;
+using namespace ui;
+using namespace app;
+using plugin::Plugin;
+using plugin::Model;
+using namespace engine;
+using namespace componentlibrary;
 
 
 } // namespace rack
