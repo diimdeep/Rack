@@ -39,6 +39,8 @@ bool lockModules = false;
 float autosavePeriod = 15.0;
 bool skipLoadOnLaunch = false;
 bool pauseUnfocused = false;
+bool disableCableLights = false;
+
 std::string patchPath;
 std::vector<NVGcolor> cableColors = {
 	nvgRGB(0xc9, 0xb7, 0x0e), // yellow
@@ -70,7 +72,7 @@ json_t* toJson() {
 	json_object_set_new(rootJ, "allowCursorLock", json_boolean(allowCursorLock));
 
 	json_object_set_new(rootJ, "realTime", json_boolean(realTime));
-	
+
 	json_object_set_new(rootJ, "keepPreviews", json_boolean(keepPreviews));
 
 	json_object_set_new(rootJ, "sampleRate", json_real(sampleRate));
@@ -92,6 +94,7 @@ json_t* toJson() {
 	}
 
 	json_object_set_new(rootJ, "pauseUnfocused", json_boolean(pauseUnfocused));
+	json_object_set_new(rootJ, "disableCableLights", json_boolean(disableCableLights));
 
 	json_object_set_new(rootJ, "patchPath", json_string(patchPath.c_str()));
 
@@ -187,6 +190,10 @@ void fromJson(json_t* rootJ) {
 	json_t *pauseUnfocusedJ = json_object_get(rootJ, "pauseUnfocused");
 	if (pauseUnfocusedJ)
 		pauseUnfocused = json_boolean_value(pauseUnfocusedJ);
+
+	json_t *disableCableLightsJ = json_object_get(rootJ, "disableCableLights");
+	if (disableCableLightsJ)
+		disableCableLights = json_boolean_value(disableCableLightsJ);
 
 	json_t* patchPathJ = json_object_get(rootJ, "patchPath");
 	if (patchPathJ)

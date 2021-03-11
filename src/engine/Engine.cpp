@@ -273,12 +273,14 @@ static void Engine_stepModules(Engine* that, int threadId) {
 			}
 		}
 
-		// Iterate ports to step plug lights
-		for (Input& input : module->inputs) {
-			input.process(processArgs.sampleTime);
-		}
-		for (Output& output : module->outputs) {
-			output.process(processArgs.sampleTime);
+		if(!settings::disableCableLights) {
+			// Iterate ports to step plug lights
+			for (Input& input : module->inputs) {
+				input.process(processArgs.sampleTime);
+			}
+			for (Output& output : module->outputs) {
+				output.process(processArgs.sampleTime);
+			}
 		}
 	}
 }

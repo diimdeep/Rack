@@ -357,6 +357,12 @@ struct FullscreenItem : ui::MenuItem {
 	}
 };
 
+struct ViewDisableCableLightsItem : ui::MenuItem {
+	void onAction(const event::Action& e) override {
+		settings::disableCableLights ^= true;
+	}
+};
+
 struct ViewButton : MenuButton {
 	void onAction(const event::Action& e) override {
 		ui::Menu* menu = createMenu();
@@ -377,6 +383,12 @@ struct ViewButton : MenuButton {
 		cursorLockItem->text = "Lock cursor while dragging";
 		cursorLockItem->rightText = CHECKMARK(settings::allowCursorLock);
 		menu->addChild(cursorLockItem);
+
+
+		ViewDisableCableLightsItem* disableCableLightsItem = new ViewDisableCableLightsItem;
+		disableCableLightsItem->text = "Disable port lights";
+		disableCableLightsItem->rightText = CHECKMARK(settings::disableCableLights);
+		menu->addChild(disableCableLightsItem);
 
 		ZoomSlider* zoomSlider = new ZoomSlider;
 		zoomSlider->box.size.x = 200.0;

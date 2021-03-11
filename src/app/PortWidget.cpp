@@ -4,7 +4,7 @@
 #include <app.hpp>
 #include <history.hpp>
 #include <componentlibrary.hpp>
-#include <settings.hpp> 
+#include <settings.hpp>
 
 
 namespace rack {
@@ -38,14 +38,16 @@ void PortWidget::step() {
 	if (!module)
 		return;
 
-	std::vector<float> values(3);
-	for (int i = 0; i < 3; i++) {
-		if (type == OUTPUT)
-			values[i] = module->outputs[portId].plugLights[i].getBrightness();
-		else
-			values[i] = module->inputs[portId].plugLights[i].getBrightness();
+	if(!settings::disableCableLights){
+		std::vector<float> values(3);
+		for (int i = 0; i < 3; i++) {
+			if (type == OUTPUT)
+				values[i] = module->outputs[portId].plugLights[i].getBrightness();
+			else
+				values[i] = module->inputs[portId].plugLights[i].getBrightness();
+		}
+		plugLight->setBrightnesses(values);
 	}
-	plugLight->setBrightnesses(values);
 
 	Widget::step();
 }
@@ -70,7 +72,7 @@ void PortWidget::onButton(const event::Button &e) {
 				int id = APP->scene->rack->nextCableColorId++;
 				APP->scene->rack->nextCableColorId %= settings::cableColors.size();
 				cw->color = settings::cableColors[id];
-			} else 
+			} else
 			{
 				// history::CableRemove
 				history::CableRemove *h = new history::CableRemove;

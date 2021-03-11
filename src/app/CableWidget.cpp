@@ -6,7 +6,7 @@
 #include <patch.hpp>
 #include <settings.hpp>
 #include <engine/Port.hpp>
-
+#include <settings.hpp>
 
 namespace rack {
 namespace app {
@@ -261,6 +261,10 @@ void CableWidget::draw(const DrawArgs& args) {
 }
 
 void CableWidget::drawPlugs(const DrawArgs& args) {
+	if(settings::disableCableLights) {
+		return;
+	}
+
 	math::Vec outputPos = getOutputPos();
 	math::Vec inputPos = getInputPos();
 
