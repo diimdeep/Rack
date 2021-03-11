@@ -18,6 +18,9 @@
 #if defined ARCH_MAC
 	#include <mach/mach_init.h>
 	#include <mach/thread_act.h>
+	#include <mach/mach.h>
+    #include <mach/mach_time.h>
+	#include <mach/thread_policy.h>
 #endif
 
 #if defined ARCH_WIN
@@ -150,6 +153,93 @@ void setThreadName(const std::string& name) {
 #endif
 }
 
+// The following function is taken from the jacktrip source code
+// https://github.com/jacktrip/jacktrip/blob/main/src/jacktrip_globals.cpp
+// The following function is taken from the chromium source code
+// https://github.com/chromium/chromium/blob/master/base/threading/platform_thread_mac.mm
+// For the following macOS implementation of the function setRealtimeProcessPriority() only: Copyright (c) 2012 The Chromium Authors. All rights reserved.
+
+// Enables time-contraint policy and priority suitable for low-latency,
+// glitch-resistant audio.
+void setRealtimeProcessPriorityForMacOS() {
+    // Increase thread priority to real-time.
+
+    // Please note that the thread_policy_set() calls may fail in
+    // rare cases if the kernel decides the system is under heavy load
+    // and is unable to handle boosting the thread priority.
+    // In these cases we just return early and go on with life.
+
+    mach_port_t mach_thread_id = mach_thread_self();
+
+    // Make thread fixed priority.
+    thread_extended_policy_data_t policy;
+    policy.timeshare = 0;  // Set to 1 for a non-fixed thread.
+    kern_return_t result =
+            thread_policy_set(mach_thread_id,
+                              THREAD_EXTENDED_POLICY,
+                              reinterpret_cast<thread_policy_t>(&policy),
+                              THREAD_EXTENDED_POLICY_COUNT);
+    if (result != KERN_SUCCESS) {
+    	WARN("Failed to make thread fixed priority. %d", result);
+        return;
+    }
+
+    // Set to relatively high priority.
+    thread_precedence_policy_data_t precedence;
+    precedence.importance = 63;
+    result = thread_policy_set(mach_thread_id,
+                               THREAD_PRECEDENCE_POLICY,
+                               reinterpret_cast<thread_policy_t>(&precedence),
+                               THREAD_PRECEDENCE_POLICY_COUNT);
+    if (result != KERN_SUCCESS) {
+    	WARN("Failed to set thread priority. %d", result);
+        return;
+    }
+
+    // Most important, set real-time constraints.
+
+    // Define the guaranteed and max fraction of time for the audio thread.
+    // These "duty cycle" values can range from 0 to 1.  A value of 0.5
+    // means the scheduler would give half the time to the thread.
+    // These values have empirically been found to yield good behavior.
+    // Good means that audio performance is high and other threads won't starve.
+    const double kGuaranteedAudioDutyCycle = 0.75;
+    const double kMaxAudioDutyCycle = 0.85;
+
+    // Define constants determining how much time the audio thread can
+    // use in a given time quantum.  All times are in milliseconds.
+
+    // About 128 frames @44.1KHz
+    const double kTimeQuantum = 2.9;
+
+    // Time guaranteed each quantum.
+    const double kAudioTimeNeeded = kGuaranteedAudioDutyCycle * kTimeQuantum;
+
+    // Maximum time each quantum.
+    const double kMaxTimeAllowed = kMaxAudioDutyCycle * kTimeQuantum;
+
+    // Get the conversion factor from milliseconds to absolute time
+    // which is what the time-constraints call needs.
+    mach_timebase_info_data_t tb_info;
+    mach_timebase_info(&tb_info);
+    double ms_to_abs_time =
+            (static_cast<double>(tb_info.denom) / tb_info.numer) * 1000000;
+
+    thread_time_constraint_policy_data_t time_constraints;
+    time_constraints.period = kTimeQuantum * ms_to_abs_time;
+    time_constraints.computation = kAudioTimeNeeded * ms_to_abs_time;
+    time_constraints.constraint = kMaxTimeAllowed * ms_to_abs_time;
+    time_constraints.preemptible = 0;
+
+    result = thread_policy_set(mach_thread_id,
+                               THREAD_TIME_CONSTRAINT_POLICY,
+                               reinterpret_cast<thread_policy_t>(&time_constraints),
+                               THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+    if (result != KERN_SUCCESS)
+    	WARN("Failed to set thread realtime constraints.  %d", result);
+
+    return;
+}
 
 void setThreadRealTime(bool realTime) {
 #if defined ARCH_LIN
@@ -172,7 +262,9 @@ void setThreadRealTime(bool realTime) {
 	// pthread_getschedparam(pthread_self(), &policy, &param);
 	// DEBUG("policy %d priority %d", policy, param.sched_priority);
 #elif defined ARCH_MAC
-	// Not yet implemented
+	if(realTime){
+		setRealtimeProcessPriorityForMacOS();
+	}
 #elif defined ARCH_WIN
 	// Set process class first
 	if (realTime) {
